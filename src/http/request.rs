@@ -1,10 +1,10 @@
-use std::str::Utf8Error;
-use std::str;
-use std::error::Error;
-use super::method::{ HttpMethod, MethodError};
-use std::convert::TryFrom;
-use std::fmt::{Result as FmtResult, Debug, Display, Formatter};
+use super::method::{HttpMethod, MethodError};
 use super::QueryString;
+use std::convert::TryFrom;
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
+use std::str;
+use std::str::Utf8Error;
 
 #[derive(Debug)]
 pub struct Request<'buf> {
@@ -21,7 +21,7 @@ impl<'buf> Request<'buf> {
     pub fn method(&self) -> &HttpMethod {
         &self.method
     }
-    
+
     pub fn query_string(&self) -> Option<&QueryString> {
         self.query_string.as_ref()
     }
@@ -30,46 +30,44 @@ impl<'buf> Request<'buf> {
 impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
     type Error = ParserError;
 
-    fn try_from(buffer: &'buf [u8]) -> Result<Request<'buf>, Self::Error>{
+    fn try_from(buffer: &'buf [u8]) -> Result<Request<'buf>, Self::Error> {
         let request = str::from_utf8(buffer)?;
 
         let (method, request) = get_next_word(request).ok_or(ParserError::InvalidRequest)?;
         let (mut path, request) = get_next_word(request).ok_or(ParserError::InvalidRequest)?;
         let (protocol, _) = get_next_word(request).ok_or(ParserError::InvalidRequest)?;
 
-        if protocol != "HTTP/1.1"{
+        if protocol != "HTTP/1.1" {
             return Err(ParserError::InvalidProtocol);
         }
 
         let method = method.parse()?;
         let mut query_string = None;
 
-        
         if let Some(i) = path.find('?') {
-            query_string = Some(QueryString::from(&path[i+1..]));
+            query_string = Some(QueryString::from(&path[i + 1..]));
             path = &path[..i];
         }
 
-        Ok( Self{
+        Ok(Self {
             path,
             query_string,
             method,
         })
-
     }
- }
+}
 
 fn get_next_word(request: &str) -> Option<(&str, &str)> {
-    for (i, c) in request.chars().enumerate(){
-       if c == ' ' || c == '\r' {
-           return Some((&request[..i], &request[i + 1..]))
-       }
+    for (i, c) in request.chars().enumerate() {
+        if c == ' ' || c == '\r' {
+            return Some((&request[..i], &request[i + 1..]));
+        }
     }
     None
 }
 
 pub enum ParserError {
-    InvalidRequest, 
+    InvalidRequest,
     InvalidEncoding,
     InvalidProtocol,
     InvalidMethod,
@@ -78,7 +76,7 @@ pub enum ParserError {
 impl ParserError {
     fn message(&self) -> &str {
         match self {
-            Self::InvalidRequest => "Invalid Request", 
+            Self::InvalidRequest => "Invalid Request",
             Self::InvalidEncoding => "Invalid Encoding",
             Self::InvalidProtocol => "Invalid Protocol",
             Self::InvalidMethod => "Invalid Method",
@@ -99,17 +97,15 @@ impl From<Utf8Error> for ParserError {
 }
 
 impl Display for ParserError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult{
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.message())
     }
 }
 
 impl Debug for ParserError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult{
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{}", self.message())
     }
 }
 
-impl Error for ParserError {
-
-}
+impl Error for ParserError {}

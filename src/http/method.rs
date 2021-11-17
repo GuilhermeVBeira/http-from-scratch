@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 #[derive(Debug)]
-pub enum HttpMethod{
+pub enum HttpMethod {
     GET,
     DELETE,
     POST,
@@ -17,7 +17,7 @@ impl FromStr for HttpMethod {
     type Err = MethodError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s{
+        match s {
             "GET" => Ok(Self::GET),
             "DELETE" => Ok(Self::DELETE),
             "POST" => Ok(Self::POST),
@@ -27,7 +27,7 @@ impl FromStr for HttpMethod {
             "OPTIONS" => Ok(Self::OPTIONS),
             "TRACE" => Ok(Self::TRACE),
             "PATCH" => Ok(Self::PATCH),
-            _ => Err(MethodError)
+            _ => Err(MethodError),
         }
     }
 }
